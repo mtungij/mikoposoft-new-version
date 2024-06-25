@@ -1,0 +1,1 @@
+select count(*) as aggregate from `loans` where exists (select * from `branches` where `loans`.`id` = `branches`.`loan_id` and `branches`.`id` = 11)
