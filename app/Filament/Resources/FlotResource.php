@@ -51,7 +51,7 @@ class FlotResource extends Resource
                         $userBranches = auth()->user()->branches()->get()->pluck('id')->toArray();
                         return Branch::whereIn('id', $userBranches)->get()->pluck('name', 'id');
                     })
-                    ->label(__('Branch'))
+                    ->label(__('To Branch Name'))
                     ->required()
                     ->searchable(),
 
@@ -96,7 +96,7 @@ class FlotResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->with('transactionAccount');
+                return $query->with('transactionAccount')->where('company_id', auth()->user()->company_id);
             })
             ->columns([
                 TextColumn::make('capital.transactionAccount.name')
@@ -111,7 +111,7 @@ class FlotResource extends Resource
                     ->numeric(),
                 TextColumn::make('created_at')
                     ->label(__('Date'))
-                    ->dateTime('Y-m-d')
+                    ->dateTime('d-m-Y')
             ])
             ->filters([
                 //

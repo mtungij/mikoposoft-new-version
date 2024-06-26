@@ -88,6 +88,10 @@ class LoanFeeResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->query(LoanFee::query())
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->where('company_id', auth()->user()->company_id);
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('branch.name')
                     ->numeric()

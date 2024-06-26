@@ -37,7 +37,7 @@ class AppPanelProvider extends PanelProvider
             ->passwordReset()
             ->sidebarCollapsibleOnDesktop()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Cyan,
             ])
             ->tenant(Branch::class)
             ->tenantProfile(EditBranchProfile::class)

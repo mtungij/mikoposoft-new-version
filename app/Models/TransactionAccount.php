@@ -12,7 +12,7 @@ class TransactionAccount extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id', 'name'];
+    protected $fillable = ['branch_id', 'company_id', 'name'];
 
     public function branch(): BelongsTo
     {

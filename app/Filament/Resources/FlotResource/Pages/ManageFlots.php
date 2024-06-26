@@ -4,10 +4,13 @@ namespace App\Filament\Resources\FlotResource\Pages;
 
 use App\Filament\Resources\FlotResource;
 use App\Models\Capital;
+use App\Models\Flot;
 use Filament\Actions;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 use Filament\Actions\CreateAction;
+use Illuminate\Database\Eloquent\Model;
 
 class ManageFlots extends ManageRecords
 {
@@ -33,6 +36,24 @@ class ManageFlots extends ManageRecords
 
                     $capital->decrement('amount', $amount + $withdrawCharges);
                     return $data;
+                })
+                ->using(function (array $data, string $model): ?Model {
+                    $data['company_id'] = auth()->user()->company_id;
+                    $data['branch_id'] = Filament::getTenant()->id;
+
+                    $floatExist = Flot::where([
+                        ['transaction_account_id', '=', $data['transaction_account_id']],
+                        ['to_branch_id','=', $data['branch_id']],
+                        ['company_id','=', auth()->user()->company_id],
+                    ])->first();
+
+                    if($floatExist) {
+                        $floatExist->increment('amount', $data['amount']);
+                        return null;
+                    }
+                    
+                    $float = $model::create($data);
+                    return $float;
                 }),
         ];
     }

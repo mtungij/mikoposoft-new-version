@@ -15,10 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->restrictOnDelete();
-            $table->foreignId('guarantor_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('loan_detail_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('collateral_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('local_goverment_detail_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
             $table->string('loan_type')->default('individual');
             $table->string('status')->default('pending');

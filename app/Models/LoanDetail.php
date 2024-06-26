@@ -14,6 +14,7 @@ class LoanDetail extends Model
     protected $fillable = [
         "branch_id",
         "loan_category_id",
+        "loan_id",
         "formula_id",
         "amount",
         "duration",
@@ -36,9 +37,9 @@ class LoanDetail extends Model
         return $this->belongsTo(Formula::class);
     }
 
-    public function loans(): HasMany
+    public function loan(): BelongsTo
     {
-        return $this->hasMany(Loan::class);
+        return $this->belongsTo(Loan::class);
     }
 
 }

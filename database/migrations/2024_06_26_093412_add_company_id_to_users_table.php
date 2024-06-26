@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('local_goverment_details', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('title')->nullable();
-            $table->timestamps();
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('company_id')->nullable()->after('id')->constrained()->cascadeOnDelete();
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('local_goverment_details');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('company_id');
+        });
     }
 };

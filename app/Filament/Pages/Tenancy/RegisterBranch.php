@@ -2,6 +2,7 @@
 namespace App\Filament\Pages\Tenancy;
 
 use App\Models\Branch;
+use App\Models\Company;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -18,8 +19,10 @@ class RegisterBranch extends RegisterTenant
     {
         return $form
             ->schema([
+                // TextInput::make('company_name')
+                //     ->label('Company Name'),
                 TextInput::make('name')
-                    ->label('Branch Name'),
+                    ->label('First Branch Name'),
                 TextInput::make('phone')
                     ->label('Branch Phone Number')
                     ->required(),
@@ -35,7 +38,14 @@ class RegisterBranch extends RegisterTenant
  
     protected function handleRegistration(array $data): Branch
     {
+        // $company = Company::create([
+        //     'name'=> $data['company_name'],
+        //     'user_id' => auth()->id(),
+        // ]);
+
         $branch = Branch::create($data);
+
+        // auth()->user()->update(['company_id'=> $company->id]);
  
         $branch->users()->attach(auth()->user());
  

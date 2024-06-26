@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('guarantor_items', function (Blueprint $table) {
+        Schema::create('companies', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('guarantor_id')->constrained()->cascadeOnDelete();
-            $table->string('name')->nullable();
+            $table->foreignId('branch_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->string('name');
             $table->string('phone')->nullable();
-            $table->string('relationship')->nullable();
-            $table->string('street')->nullable();
-            $table->string('business_name')->nullable();
+            $table->string('email')->nullable();
+            $table->string('address')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('guarantor_items');
+        Schema::dropIfExists('companies');
     }
 };

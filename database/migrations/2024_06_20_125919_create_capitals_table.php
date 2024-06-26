@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('capitals', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
             $table->foreignId('transaction_account_id')->constrained()->cascadeOnDelete();

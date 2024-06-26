@@ -11,7 +11,7 @@ class LoanFee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id', 'category', 'fee_type', 'desc', 'fee_amount'];
+    protected $fillable = ['branch_id', 'company_id', 'category', 'fee_type', 'desc', 'fee_amount'];
 
 
     public function branch(): BelongsTo

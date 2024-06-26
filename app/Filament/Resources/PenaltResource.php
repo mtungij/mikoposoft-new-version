@@ -43,6 +43,10 @@ class PenaltResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->query(Penalt::query())
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->where('company_id', auth()->user()->company_id);
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('type')
                     ->searchable()

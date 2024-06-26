@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\LoanCategoryResource\Pages;
 
 use App\Filament\Resources\LoanCategoryResource;
+use App\Models\LoanCategory;
 use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
@@ -21,6 +22,12 @@ class ManageLoanCategories extends ManageRecords
                 ->mutateFormDataUsing(function (CreateAction $action,array $data): array {
                     $fromAmount = (int) str_replace(',', '', $data['from']);
                     $toAmount = (int) str_replace(',', '', $data['to']);
+
+                    $loanCategory = LoanCategory::where([
+                        'name' => $data['name'],
+                        'company_id'=> auth()->user()->company_id,
+                    ])->first();
+
                     if( $fromAmount > $toAmount ) {
                         Notification::make()
                             ->title(__('To amount should be greater than from amount.'))
@@ -30,17 +37,25 @@ class ManageLoanCategories extends ManageRecords
                         
                         $action->halt();
                     }
+                    if($loanCategory) {
+                        Notification::make()
+                            ->title(__('This loan product already exist.'))
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                        
+                        $action->halt();
+                    }
+                    
                     return $data;
                 })
-                // ->using(function (array $data, string $model): Model {
-                //     $data['branch_id'] = Filament::getTenant()->id;
-                //     // if($data['select_by'] == 'all') {
-                //     //     $data['branches'] = auth()->user()->branches()->get()->pluck('id')->toArray();
-                //     // }
-                //     $loanCategory = $model::create($data);
-                //     // $loanCategory->branches()->attach($data['branches']);
-                //     return $loanCategory;
-                // })
+                ->using(function (array $data, string $model): Model {
+                    $data['company_id'] = auth()->user()->company_id;
+                    $data['branch_id'] = Filament::getTenant()->id;
+                    
+                    $loanCategories = $model::create($data);
+                    return $loanCategories;
+                }),
         ];
     }
 }

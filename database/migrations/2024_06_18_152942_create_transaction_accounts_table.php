@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('transaction_accounts', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->timestamps();

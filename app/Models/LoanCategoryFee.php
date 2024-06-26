@@ -10,8 +10,13 @@ class LoanCategoryFee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['loan_category_id', 'loan_fee_id', 'fee_amount', 'fee_type'];
+    protected $fillable = ['loan_category_id', 'company_id', 'loan_fee_id', 'fee_amount', 'fee_type'];
 
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 
     public function loanCategory(): BelongsTo
     {

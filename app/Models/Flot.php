@@ -10,7 +10,7 @@ class Flot extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id', 'capital_id', 'to_branch_id', 'amount', 'transaction_account_id', 'withdrawal_charges'];
+    protected $fillable = ['branch_id', 'company_id', 'capital_id', 'to_branch_id', 'amount', 'transaction_account_id', 'withdrawal_charges'];
 
 
     public function branch(): BelongsTo

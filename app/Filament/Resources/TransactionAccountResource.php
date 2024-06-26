@@ -24,6 +24,7 @@ class TransactionAccountResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('name')
+                    ->columnSpanFull()
                     ->required()
                     ->options([
                         'cash'=> 'Cash',
@@ -35,14 +36,17 @@ class TransactionAccountResource extends Resource
                         'crdb' => 'CRDB',
                         'nbc'=> 'NBC',
                     ])
-                    ->searchable()
-                    ->unique('transaction_accounts'),
+                    ->searchable(),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->query(TransactionAccount::query())
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->where('company_id', auth()->user()->company_id);
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),

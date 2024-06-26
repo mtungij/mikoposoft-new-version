@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -26,6 +27,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
      * @var array<int, string>
      */
     protected $fillable = [
+        'company_id',
         'name',
         'email',
         'password',
@@ -102,5 +104,10 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     public function loans(): HasMany
     {
         return $this->hasMany(Loan::class);
+    }
+
+    public function company(): HasOne
+    {
+        return $this->hasOne(Company::class);
     }
 }

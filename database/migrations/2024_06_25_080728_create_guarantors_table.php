@@ -13,8 +13,11 @@ return new class extends Migration
     {
         Schema::create('guarantors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
-           
+            $table->string('name')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('relationship')->nullable();
+            $table->string('street')->nullable();
+            $table->string('business_name')->nullable();
             $table->timestamps();
         });
     }

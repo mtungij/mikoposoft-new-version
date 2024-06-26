@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Loan extends Model
 {
@@ -14,18 +16,14 @@ class Loan extends Model
     protected $fillable = [
         "branch_id",
         "user_id",
-        "guarantor_id",
-        "loan_detail_id",
-        "local_goverment_detail_id",
-        "collateral_id",
         "customer_id",
         "loan_type",
         "status",
     ];
 
-    public function branch(): HasMany
+    public function branch(): BelongsTo
     {
-        return $this->hasMany(Branch::class);
+        return $this->belongsTo(Branch::class);
     }
 
     public function user(): BelongsTo
@@ -33,19 +31,24 @@ class Loan extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function loanDetail(): BelongsTo
+    public function loanDetails(): HasMany
     {
-        return $this->belongsTo(LoanDetail::class);
+        return $this->hasMany(LoanDetail::class);
     }
 
-    public function localGovermentDetail(): BelongsTo
+    public function guarantors(): HasMany
     {
-        return $this->belongsTo(LocalGovermentDetail::class);
+        return $this->hasMany(Guarantor::class);
     }
 
-    public function collateral(): BelongsTo
+    public function localGovermentDetails(): HasMany
     {
-        return $this->belongsTo(Collateral::class);
+        return $this->hasMany(LocalGovermentDetail::class);
+    }
+
+    public function collaterals(): HasMany
+    {
+        return $this->hasMany(Collateral::class);
     }
 
     public function customer(): BelongsTo

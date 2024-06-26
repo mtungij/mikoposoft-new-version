@@ -34,6 +34,7 @@ return new class extends Migration
             $table->string('account_type');
             $table->string('img_url')->nullable();
             $table->string('status')->default('new');
+            $table->string('full_name')->virtualAs('concat(first_name, \' \', middle_name, \' \', last_name)');
             $table->timestamps();
         });
     }

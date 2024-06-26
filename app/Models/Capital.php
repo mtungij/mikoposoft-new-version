@@ -11,7 +11,7 @@ class Capital extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'branch_id', 'transaction_account_id', 'amount'];
+    protected $fillable = ['user_id', 'branch_id', 'company_id', 'transaction_account_id', 'amount'];
 
     public function user(): BelongsTo
     {

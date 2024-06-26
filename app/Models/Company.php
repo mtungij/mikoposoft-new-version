@@ -6,22 +6,25 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class GuarantorItem extends Model
+class Company extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        "guarantor_id",
+        "user_id",
+        "branch_id",
         "name",
         "phone",
-        "relationship",
-        "street",
-        "business_name",
+        "address",
     ];
 
-
-    public function guarantor(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Guarantor::class);
+        return $this->belongsTo(User::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

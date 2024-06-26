@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('local_goverment_details', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('title')->nullable();
-            $table->timestamps();
+        Schema::table('loan_details', function (Blueprint $table) {
+            $table->foreignId('loan_id')->after('id')->constrained()->cascadeOnDelete();
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('local_goverment_details');
+        Schema::table('loan_details', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('loan_id');
+        });
     }
 };

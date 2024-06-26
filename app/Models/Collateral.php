@@ -11,15 +11,21 @@ class Collateral extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id'];
+    protected $fillable = [
+        'loan_id',
+        "name",
+        "current_condition",
+        "current_value",
+        "img_url",
+    ];
 
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
     }
 
-    public function loans(): HasMany
+    public function loan(): BelongsTo
     {
-        return $this->hasMany(Loan::class);
+        return $this->belongsTo(Loan::class);
     }
 }

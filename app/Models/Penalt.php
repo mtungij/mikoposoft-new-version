@@ -12,6 +12,7 @@ class Penalt extends Model
 
     protected $fillable = [
         "branch_id",
+        'company_id',
         "type",
         "amount",
     ];

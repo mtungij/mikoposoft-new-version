@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('collaterals', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
+            $table->string('name')->nullable();
+            $table->string('current_condition')->nullable();
+            $table->integer('current_value')->nullable();
+            $table->string('img_url')->nullable();
             $table->timestamps();
         });
     }

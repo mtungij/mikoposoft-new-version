@@ -13,6 +13,7 @@ class LocalGovermentDetail extends Model
 
     protected $fillable = [
         "branch_id",
+        "loan_id",
         "name",
         "phone",
         "title",
@@ -23,8 +24,8 @@ class LocalGovermentDetail extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function loans(): HasMany
+    public function loan(): BelongsTo
     {
-        return $this->hasMany(Loan::class);
+        return $this->belongsTo(Loan::class);
     }
 }

@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('loan_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
             $table->foreignId('loan_category_id')->constrained()->cascadeOnDelete();
             $table->foreignId('formula_id')->constrained()->cascadeOnDelete();
             $table->integer('amount')->unsigned();

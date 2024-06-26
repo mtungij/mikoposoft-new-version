@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('loan_category_fees', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('loan_fee_id')->constrained()->cascadeOnDelete();
             $table->foreignId('loan_category_id')->constrained()->cascadeOnDelete();
             $table->string('fee_type');

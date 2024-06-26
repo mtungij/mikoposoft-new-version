@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\LoanCategoryResource\Pages;
 use App\Filament\Resources\LoanCategoryResource\RelationManagers;
 use App\Models\Branch;
+use App\Models\Formula;
 use App\Models\LoanCategory;
 use Filament\Forms;
 use Filament\Forms\Components\MultiSelect;
@@ -47,8 +48,7 @@ class LoanCategoryResource extends Resource
                 //     ->required(),
                 Forms\Components\TextInput::make('name')
                     ->required()
-                    ->maxLength(255)
-                    ->unique('loan_categories'),
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('from')
                     ->required()
                     ->mask(RawJs::make('$money($input)'))
@@ -81,6 +81,10 @@ class LoanCategoryResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->query(LoanCategory::query())
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->where('company_id', auth()->user()->company_id);
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),

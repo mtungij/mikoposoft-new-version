@@ -160,7 +160,9 @@ class CustomerResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('img_url'),
+                Tables\Columns\ImageColumn::make('img_url')
+                ->label('Passport')
+                ->circular(),
                 Tables\Columns\TextColumn::make('branch.name')
                     ->numeric()
                     ->sortable(),

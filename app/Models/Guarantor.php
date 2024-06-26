@@ -11,11 +11,22 @@ class Guarantor extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id'];
+    protected $fillable = [
+        'loan_id',
+         "name",
+        "phone",
+        "relationship",
+        "street",
+        "business_name",];
 
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function loan(): BelongsTo
+    {
+        return $this->belongsTo(Loan::class);
     }
 
     public function guarantors(): HasMany

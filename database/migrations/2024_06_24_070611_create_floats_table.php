@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('flots', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
             $table->foreignId('capital_id')->constrained()->cascadeOnDelete();
             $table->foreignId('to_branch_id')->constrained('branches')->cascadeOnDelete();

@@ -27,16 +27,20 @@ class FormulaResource extends Resource
                     ->required()
                     ->options([
                         'straight' => 'Straight Formula',
-                        'flaterate' => 'Flat Rate Formula',
+                        'flaterate' => 'Flatrate Formula',
                         'reducing' => "Reducing Formula"
                     ])
-                    ->unique('formulas'),
+                    ->native(false),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->query(Formula::query())
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->where('company_id', auth()->user()->company_id);
+            })
             ->columns([
                 
                 Tables\Columns\TextColumn::make('name')

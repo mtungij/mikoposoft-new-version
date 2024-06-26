@@ -17,6 +17,8 @@ class ManageUsers extends ManageRecords
         return [
             Actions\CreateAction::make()
                 ->using(function (array $data, string $model): Model {
+                    $data['company_id'] = auth()->user()->company_id;
+                    
                     $user = $model::create($data);
                     $user->branches()->attach($data['branches']);
                     return $user;
