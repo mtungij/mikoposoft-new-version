@@ -41,7 +41,7 @@ class CapitalResource extends Resource
                     ->relationship(
                         name:'transactionAccount',
                         titleAttribute:'name',
-                        modifyQueryUsing: fn (Builder $query) => $query->whereIn('branch_id', auth()->user()->branches()->get()->pluck('id')->toArray())
+                        modifyQueryUsing: fn (Builder $query) => $query->where('company_id', auth()->user()->company_id)
                     )
                     ->searchable()
                     ->preload()
@@ -57,6 +57,7 @@ class CapitalResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->where('company_id', auth()->user()->company_id))
             ->columns([
                 TextColumn::make('transactionAccount.name'),
                 TextColumn::make('amount')

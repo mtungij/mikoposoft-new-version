@@ -10,6 +10,8 @@ class ViewLoan extends ViewRecord
 {
     protected static string $resource = LoanResource::class;
 
+    protected static string $view = 'filament.resources.loans.pages.edit-loan';
+
     protected function getHeaderActions(): array
     {
         return [

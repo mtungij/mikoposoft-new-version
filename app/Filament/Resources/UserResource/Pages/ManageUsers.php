@@ -20,7 +20,6 @@ class ManageUsers extends ManageRecords
                     $data['company_id'] = auth()->user()->company_id;
                     
                     $user = $model::create($data);
-                    $user->branches()->attach($data['branches']);
                     return $user;
                 })
         ];

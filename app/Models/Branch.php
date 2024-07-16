@@ -13,7 +13,7 @@ class Branch extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'phone', 'email', 'region_id', 'status'];
+    protected $fillable = ['company_id','name', 'phone', 'email', 'region_id', 'status'];
 
     public function region(): BelongsTo
     {

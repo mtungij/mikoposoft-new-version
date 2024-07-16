@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
@@ -11,15 +12,17 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser, HasTenants
+class User extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles,  HasPanelShield;
 
     /**
      * The attributes that are mass assignable.
@@ -28,6 +31,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
      */
     protected $fillable = [
         'company_id',
+        'branch_id',
         'name',
         'email',
         'password',
@@ -70,9 +74,9 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         );
     }
 
-    public function branches(): BelongsToMany
+    public function branch(): BelongsTo
     {
-        return $this->belongsToMany(Branch::class);
+        return $this->belongsTo(Branch::class);
     }
  
     public function getTenants(Panel $panel): Collection

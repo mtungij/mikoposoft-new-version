@@ -39,6 +39,7 @@ class LoanFeeResource extends Resource
                     ->native(false),
                 Forms\Components\TextInput::make('desc')
                     ->required()
+                    ->visible(fn (Get $get) => $get('category') == 'general')
                     ->maxLength(255),
                 Forms\Components\Select::make('fee_type')
                     ->required()
@@ -92,9 +93,6 @@ class LoanFeeResource extends Resource
                 return $query->where('company_id', auth()->user()->company_id);
             })
             ->columns([
-                Tables\Columns\TextColumn::make('branch.name')
-                    ->numeric()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('category')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('fee_type')

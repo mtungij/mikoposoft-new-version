@@ -37,8 +37,7 @@ class FlotResource extends Resource
                     ->relationship(
                         name: 'capital',
                         modifyQueryUsing: function (Builder $query) {
-                            $userBranches = auth()->user()->branches()->get()->pluck('id')->toArray();
-                            return $query->whereIn('branch_id', $userBranches)->with('transactionAccount');
+                            return $query->where('company_id', auth()->user()->company_id)->with('transactionAccount');
                         })
                     ->label(__('Company Account'))
                     ->getOptionLabelFromRecordUsing(fn (?Model $record): string => "{$record->transactionAccount->name} " ."(" . number_format($record->amount) .")" )
@@ -48,8 +47,7 @@ class FlotResource extends Resource
                     ->live(),
                 Select::make('to_branch_id')
                     ->options(function () {
-                        $userBranches = auth()->user()->branches()->get()->pluck('id')->toArray();
-                        return Branch::whereIn('id', $userBranches)->get()->pluck('name', 'id');
+                        return Branch::where('company_id', auth()->user()->branch_id)->get()->pluck('name', 'id');
                     })
                     ->label(__('To Branch Name'))
                     ->required()
@@ -77,8 +75,7 @@ class FlotResource extends Resource
 
                 Select::make('transaction_account_id')
                     ->options(function () {
-                        $userBranches = auth()->user()->branches()->get()->pluck('id')->toArray();
-                        return TransactionAccount::whereIn('branch_id', $userBranches)->get()->pluck('name', 'id');
+                        return TransactionAccount::where('company_id', auth()->user()->company_id)->get()->pluck('name', 'id');
                     })
                     ->label(__('To Branch Account'))
                     ->required()

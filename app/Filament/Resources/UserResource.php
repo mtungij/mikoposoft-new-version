@@ -56,13 +56,13 @@ class UserResource extends Resource
                     ])
                     ->native(false)
                     ->required(),
-                MultiSelect::make('branches')
-                    ->label(__('Branches'))
+                Select::make('branch_id')
+                    ->label(__('Branch'))
                     ->options(function () {
-                        $userBranches = auth()->user()->branches()->get()->pluck('id')->toArray();
-                        return Branch::whereIn('id', $userBranches)->get()->pluck('name', 'id');
+                        return Branch::where('company_id', auth()->user()->company_id)->get()->pluck('name', 'id');
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->required(),
                 Select::make('position')
                     ->label(__('Position'))
                     ->options([
@@ -128,11 +128,7 @@ class UserResource extends Resource
         return $table
             ->query(User::query())
             ->modifyQueryUsing(function (Builder $query) {
-                $userBranches = auth()->user()->branches()->get()->pluck('id')->toArray();
-                // dd($userBranches);
-                return $query->whereHas('branches', function (Builder $query) use ($userBranches) {
-                    $query->whereIn('branch_user.branch_id', $userBranches);
-                })->where('position', '!=', 'admin');
+                return $query->where('company_id', auth()->user()->company_id)->where('position', '!=', 'admin');
             })
             ->columns([
                 TextColumn::make('name')
@@ -152,7 +148,7 @@ class UserResource extends Resource
                         'active' => 'Active',
                         'blocked' => 'Blocked'
                     ]),
-                TextColumn::make('branches.name'),
+                TextColumn::make('branch.name'),
                 TextColumn::make('account')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->default('-'),
@@ -167,18 +163,7 @@ class UserResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
-                ->using(function (Model $record, array $data): Model {
-                    $user =User::find($record->id);
-
-                    if($data['branch']) {
-                        $user->branches()->detach();
-                        $user->branches()->attach($data['branches']);
-                    }
-
-                    $record->update($data);
-                    return $record;
-                }),
+                Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

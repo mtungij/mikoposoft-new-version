@@ -12,7 +12,7 @@ class LoanCategory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id', 'company_id', 'name', 'from', 'to', 'interest'] ;
+    protected $fillable = ['branch_id', 'company_id', 'name', 'from', 'to', 'interest', 'penalt_amount', 'penalt_type'] ;
 
     public function branch(): BelongsTo
     {

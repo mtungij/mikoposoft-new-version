@@ -18,7 +18,7 @@ class ManageLoanFees extends ManageRecords
             Actions\CreateAction::make()
             ->using(function (array $data, string $model): Model {
                 $data['company_id'] = auth()->user()->company_id;
-                $data['branch_id'] = Filament::getTenant()->id;
+                // $data['branch_id'] = Filament::getTenant()->id;
                 
                 $loanFee = $model::create($data);
                 return $loanFee;

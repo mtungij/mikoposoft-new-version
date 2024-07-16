@@ -39,11 +39,11 @@ class ManageFlots extends ManageRecords
                 })
                 ->using(function (array $data, string $model): ?Model {
                     $data['company_id'] = auth()->user()->company_id;
-                    $data['branch_id'] = Filament::getTenant()->id;
+                    // $data['branch_id'] = Filament::getTenant()->id;
 
                     $floatExist = Flot::where([
                         ['transaction_account_id', '=', $data['transaction_account_id']],
-                        ['to_branch_id','=', $data['branch_id']],
+                        ['to_branch_id','=', $data['to_branch_id']],
                         ['company_id','=', auth()->user()->company_id],
                     ])->first();
 

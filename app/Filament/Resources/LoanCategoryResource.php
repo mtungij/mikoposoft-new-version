@@ -4,11 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LoanCategoryResource\Pages;
 use App\Filament\Resources\LoanCategoryResource\RelationManagers;
-use App\Models\Branch;
-use App\Models\Formula;
+use App\Filament\Resources\LoanCategoryResource\RelationManagers\LoanCategoryFeesRelationManager;
 use App\Models\LoanCategory;
 use Filament\Forms;
-use Filament\Forms\Components\MultiSelect;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
@@ -75,6 +73,20 @@ class LoanCategoryResource extends Resource
                     ->label(__('Interest(%)'))
                     ->required()
                     ->numeric(),
+                Forms\Components\Select::make('penalt_type')
+                    ->options([
+                        'percentage' => __('Percentage Value'),
+                        'money' => __('Money Value'),
+                    ])
+                    ->live()
+                    ->required(),
+                Forms\Components\TextInput::make('penalt_amount')
+                    ->label(__('Penalty Amount'))
+                    ->required()
+                    ->numeric()
+                    ->mask(RawJs::make('$money($input)'))
+                    ->stripCharacters(',')
+                    ->suffix(fn (Get $get) => $get('penalt_type') == 'percentage'? '%' : 'Tsh')
             ]);
     }
 
@@ -121,10 +133,21 @@ class LoanCategoryResource extends Resource
             ]);
     }
 
+
+
+    public static function getRelations(): array
+    {
+        return [
+            LoanCategoryFeesRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageLoanCategories::route('/'),
+            'index' => Pages\ListLoanCategories::route('/'),
+            'create' => Pages\CreateLoanCategory::route('/create'),
+            'edit' => Pages\EditLoanCategory::route('/{record}/edit'),
         ];
     }
 }

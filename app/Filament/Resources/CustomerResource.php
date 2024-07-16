@@ -34,15 +34,14 @@ class CustomerResource extends Resource
                     ->schema([
                     Forms\Components\Select::make('branch_id')
                         ->relationship('branch', 'name', function (Builder $query) {
-                            $companyBranchIds = auth()->user()->branches()->get()->pluck('id')->toArray();
-                            return $query->whereIn('id',$companyBranchIds);
+                            return $query->where('company_id',auth()->user()->company_id);
                         })
                         ->afterStateUpdated(function (?string $state, Set $set) {
                             $branchId = (int) $state ?? null;
 
                             $customersCount = Customer::where('branch_id', $branchId)->count() + 1;
 
-                            $customerNumber = "C-". date("Ym"). $branchId . $customersCount;
+                            $customerNumber = "C-". date("Ymi"). $branchId . "-". $customersCount;
 
                             $set('c_number', $customerNumber);
                         })
@@ -53,11 +52,7 @@ class CustomerResource extends Resource
                         ->required(),
                     Forms\Components\Select::make('user_id')
                         ->relationship('user', 'name', function (Builder $query, Get $get) {
-                            $branchId = $get('branch_id') ? [(int) $get('branch_id')] : [];
-                            // $companyBranchIds = auth()->user()->branches()->get()->pluck('id')->toArray();
-                            return $query->whereHas('branches', function (Builder $query) use ($branchId) {
-                                $query->whereIn('branch_user.branch_id', $branchId);
-                            })->where('position', '!=', 'admin');
+                            return $query->where('branch_id', $get('branch_id'))->where('position', '!=', 'admin');
                         })
                         ->label('Branch Employee')
                         ->searchable()
@@ -69,7 +64,7 @@ class CustomerResource extends Resource
                         ->label('Customer Id')
                         ->required()
                         ->default(function (Get $get) {
-                            $branchId = Filament::getTenant()->id;
+                            $branchId = auth()->user()->branch_id;
 
                             $customersCount = Customer::where('branch_id', $branchId)->count() + 1;
                             $customerNumber = "C-". date("Ym"). $branchId . $customersCount;
@@ -161,6 +156,9 @@ class CustomerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->with(['branch', 'user'])->whereRelation('branch', 'company_id', auth()->user()->company_id);
+            })
             ->columns([
                 Tables\Columns\ImageColumn::make('img_url')
                 ->label('Passport')

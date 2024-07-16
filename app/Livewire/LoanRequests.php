@@ -29,17 +29,23 @@ class LoanRequests extends Component implements HasForms, HasTable
         return $table
             ->query(Loan::query())
             ->modifyQueryUsing(function (Builder $query) {
-                return $query->where('company_id', auth()->user()->company_id);
+                return $query->with(['loanDetails'])->where('company_id', auth()->user()->company_id);
             })
             ->columns([
                 TextColumn::make('customer.full_name')
                     ->searchable(),
-                TextColumn::make('customer.phone'),
-                TextColumn::make('customer.branch.name'),
+                TextColumn::make('customer.phone')
+                    ->label(__('Phone Number')),
+                TextColumn::make('customer.branch.name')
+                    ->label(__('Branch')),
                 TextColumn::make('loanDetails.amount')
+                    ->label('Loan Amount')
+                    ->alignRight()
                     ->numeric(),
-                TextColumn::make('loanDetails.duration'),
-                TextColumn::make('loanDetails.repayments'),
+                TextColumn::make('loanDetails.duration')
+                    ->label('Duration'),
+                TextColumn::make('loanDetails.repayments')
+                    ->label('Repayments'),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (Loan $record) => match ($record->status) {

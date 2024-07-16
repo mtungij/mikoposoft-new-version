@@ -45,10 +45,11 @@ class FormulaResource extends Resource
                 
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->state(fn ($record) => match ($record->name) {
+                    ->state(fn (Formula $record) => match ($record->name) {
                         "straight" => "Straight Formula",
                         "flaterate" => "Flat Rate Formula",
-                        "reducing" => "Reducing Formula"
+                        "reducing" => "Reducing Formula",
+                        default => "Unknown Formula"
                     }),
             ])
             ->filters([

@@ -4,6 +4,10 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LoanResource\Pages;
 use App\Filament\Resources\LoanResource\RelationManagers;
+use App\Filament\Resources\LoanResource\RelationManagers\CollateralsRelationManager;
+use App\Filament\Resources\LoanResource\RelationManagers\GuarantorsRelationManager;
+use App\Filament\Resources\LoanResource\RelationManagers\LoanDetailsRelationManager;
+use App\Filament\Resources\LoanResource\RelationManagers\LocalGovermentDetailRelationManager;
 use App\Models\Customer;
 use App\Models\Formula;
 use App\Models\Loan;
@@ -55,6 +59,14 @@ class LoanResource extends Resource
                                 ->preload()
                                 ->searchable()
                                 ->required(),
+                           Select::make('status')
+                                ->options([
+                                    'pending' => 'Pending',
+                                    'approved' => 'Approved',
+                                    'rejected' => 'Rejected',
+                                ])
+                                ->visible(fn (string $operation) => $operation === 'edit')
+                                ->native(false),
                         ]),
                     Wizard\Step::make('guarantors')
                         ->label('Guarantors Details')
@@ -199,6 +211,9 @@ class LoanResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                return auth()->user()->position == 'admin'? $query->where('company_id', auth()->user()->company_id): $query->where('branch_id', auth()->user()->branch_id);
+            })
             ->columns([
                 TextColumn::make('branch.name'),
                 TextColumn::make('customer.full_name')
@@ -225,7 +240,10 @@ class LoanResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            GuarantorsRelationManager::class,
+            LoanDetailsRelationManager::class,
+            CollateralsRelationManager::class,
+            LocalGovermentDetailRelationManager::class,
         ];
     }
 
