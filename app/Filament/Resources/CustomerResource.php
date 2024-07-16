@@ -59,13 +59,14 @@ class CustomerResource extends Resource
                                 $query->whereIn('branch_user.branch_id', $branchId);
                             })->where('position', '!=', 'admin');
                         })
+                        ->label('Branch Employee')
                         ->searchable()
                         ->default(auth()->user()->position !== 'admin' ? auth()->id() : null)
                         ->preload()
                         ->visible(auth()->user()->position == 'admin')
                         ->required(),
                     Forms\Components\TextInput::make('c_number')
-                        ->label('Customer Number')
+                        ->label('Customer Id')
                         ->required()
                         ->default(function (Get $get) {
                             $branchId = Filament::getTenant()->id;
@@ -93,7 +94,8 @@ class CustomerResource extends Resource
                         ->options([
                             'male' => 'Male',
                             'female'=> 'Female',
-                        ]),
+                        ])
+                    ->searchable(),
                     Forms\Components\TextInput::make('phone')
                         ->tel()
                         ->required()
@@ -127,7 +129,7 @@ class CustomerResource extends Resource
                         ->native(false),
                     Forms\Components\Select::make('working_status')
                         ->options([
-                            'self employee'=> 'Self Employee',
+                            'Business owner'=> 'Business Owner',
                             'goverment employee' => 'Goverment Employee',
                             'private sector' => 'Private Sector',
                         ])

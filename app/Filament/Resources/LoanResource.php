@@ -18,6 +18,9 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\RawJs;
 use Filament\Tables;
@@ -25,6 +28,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 
 class LoanResource extends Resource
 {
@@ -45,10 +50,11 @@ class LoanResource extends Resource
                             Select::make('customer_id')
                                 ->label('Customer')
                                 ->options(
-                                    fn () => Customer::where('branch_id', Filament::getTenant()->id)->get()->pluck('full_name', 'id')
+                                    fn () => Customer::get()->pluck('full_name', 'id')
                                 )
                                 ->preload()
-                                ->searchable(),
+                                ->searchable()
+                                ->required(),
                         ]),
                     Wizard\Step::make('guarantors')
                         ->label('Guarantors Details')
@@ -87,16 +93,33 @@ class LoanResource extends Resource
                                         ->options(
                                             fn () => LoanCategory::where('company_id', auth()->user()->company_id)->get()->pluck('name', 'id')
                                         )
+                                        ->live()
                                         ->searchable()
                                         ->required(),
                                     Select::make('formula_id')
-                                        ->label('Formula')
+                                        ->label('Interest Formula')
                                         ->options(
                                             fn () => Formula::where('company_id', auth()->user()->company_id)->get()->pluck('name', 'id')
                                         )
                                         ->searchable()
                                         ->required(),
                                     TextInput::make('amount')
+                                        ->live(onBlur:true)
+                                        ->afterStateUpdated(function (?string $state, Set $set, Get $get) {
+                                            $amount = (int) str_replace(',','', $state);
+
+                                            $loanCategory = LoanCategory::where('company_id', auth()->user()->company_id)->where('id', $get('loan_category_id'))->first();
+                                            if ($amount && ($amount < $loanCategory->from || $amount > $loanCategory->to)) {
+                                                Notification::make()
+                                                    ->title('The loan amount applied is invalid.')
+                                                    ->danger()
+                                                    ->color('danger')
+                                                    ->persistent()
+                                                    ->send();
+
+                                                $set('amount', '');
+                                            }
+                                        })
                                         ->label('Loan Amount Applied')
                                         ->mask(RawJs::make('$money($input)'))
                                         ->stripCharacters(',')
@@ -120,24 +143,25 @@ class LoanResource extends Resource
                                 ])
                         ]),
                     Wizard\Step::make('collaterals')
+                         ->label('Collateral Details')
                         ->schema([
                             Repeater::make('collaterals')
                                 ->relationship()
                                 ->columns(2)
                                 ->schema([
                                     TextInput::make('name')
-                                    ->label('Collateral Name')
+                                        ->label('Collateral Name')
                                         ->maxLength(100),
                                     TextInput::make('current_condition')
-                                    ->label('Collateral Condition')
+                                        ->label('Collateral Condition')
                                         ->maxLength(255),
                                     TextInput::make('current_value')
-                                    ->label('current Collateral value')
+                                        ->label('current Collateral value')
                                         ->maxLength(12)
                                         ->mask(RawJs::make('$money($input)'))
                                         ->stripCharacters(','),
                                     FileUpload::make('img_url')
-                                    ->label('Collateral attachment')
+                                        ->label('Collateral attachment')
                                         ->imageEditor()
                                         ->directory('collaterals'),
                                 ])
@@ -211,6 +235,7 @@ class LoanResource extends Resource
             'index' => Pages\ListLoans::route('/'),
             'create' => Pages\CreateLoan::route('/create'),
             'edit' => Pages\EditLoan::route('/{record}/edit'),
+            'view' => Pages\ViewLoan::route('/{record}/view'),
         ];
     }
 }

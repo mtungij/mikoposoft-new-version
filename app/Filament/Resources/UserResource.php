@@ -136,6 +136,7 @@ class UserResource extends Resource
             })
             ->columns([
                 TextColumn::make('name')
+                
                  ->searchable(),
                 TextColumn::make('email'),
                 TextColumn::make('gender')

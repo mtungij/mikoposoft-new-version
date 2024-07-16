@@ -15,6 +15,7 @@ class Loan extends Model
 
     protected $fillable = [
         "branch_id",
+        "company_id",
         "user_id",
         "customer_id",
         "loan_type",
@@ -24,6 +25,11 @@ class Loan extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function user(): BelongsTo

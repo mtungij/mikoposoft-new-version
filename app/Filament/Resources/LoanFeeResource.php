@@ -53,35 +53,34 @@ class LoanFeeResource extends Resource
                     ->numeric()
                     ->visible(fn (Get $get) => $get('category') == 'general')
                     ->maxLength(8),
-                Repeater::make('loanCategoryFees')
-                     ->label('Loan Product Fees')
-                    ->relationship('loanCategoryFees')
-                    ->columnSpanFull()
-                    ->columns(3)
-                    ->visible(fn (Get $get) => $get('category') == 'loan_product')
-                    ->schema([
-                        Select::make('loan_category_id')
-                            ->label('Loan Product')
-                            ->options(function () {
-                                $userBranches = auth()->user()->branches()->get()->pluck('id')->toArray();
-                                return LoanCategory::whereIn('branch_id', $userBranches)->get()->pluck('name', 'id');
-                            })
-                            ->searchable()
-                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                            ->required(),
-                        Select::make('fee_type')
-                            ->options([
-                                'percentage' => 'Percentage Value',
-                                'money' => 'Money Value',
-                            ])
-                            ->native(false)
-                            ->required(),
-                        TextInput::make('fee_amount')
-                            ->numeric()
-                            ->mask(RawJs::make('$money($input)'))
-                            ->stripCharacters(',')
-                            ->required(),
-                    ])
+                // Repeater::make('loanCategoryFees')
+                //      ->label('Loan Product Fees')
+                //     ->relationship('loanCategoryFees')
+                //     ->columnSpanFull()
+                //     ->columns(3)
+                //     ->visible(fn (Get $get) => $get('category') == 'loan_product')
+                //     ->schema([
+                //         Select::make('loan_category_id')
+                //             ->label('Loan Product')
+                //             ->options(function () {
+                //                 return LoanCategory::where('branch_id', auth()->user()->branch_id)->get()->pluck('name', 'id');
+                //             })
+                //             ->searchable()
+                //             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                //             ->required(),
+                //         Select::make('fee_type')
+                //             ->options([
+                //                 'percentage' => 'Percentage Value',
+                //                 'money' => 'Money Value',
+                //             ])
+                //             ->native(false)
+                //             ->required(),
+                //         TextInput::make('fee_amount')
+                //             ->numeric()
+                //             ->mask(RawJs::make('$money($input)'))
+                //             ->stripCharacters(',')
+                //             ->required(),
+                //     ])
             ]);
     }
 
