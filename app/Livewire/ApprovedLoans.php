@@ -17,12 +17,12 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 
-class LoanRequests extends Component implements HasForms, HasTable
+class ApprovedLoans extends Component implements HasForms, HasTable
 {
     use InteractsWithTable;
     use InteractsWithForms;
 
-    protected static string $view = 'filament.pages.loan-request-details';
+    protected static string $view = 'filament.pages.approved-loan-details';
     
     public function table(Table $table): Table
     {
@@ -31,7 +31,7 @@ class LoanRequests extends Component implements HasForms, HasTable
             ->modifyQueryUsing(function (Builder $query) {
                 return $query->with(['loanDetails'])->where([
                     ['company_id', auth()->user()->company_id],
-                    ['status', 'pending']
+                    ['status', 'approved']
                 ]);
             })
             ->columns([
@@ -71,6 +71,6 @@ class LoanRequests extends Component implements HasForms, HasTable
 
     public function render()
     {
-        return view('livewire.loan-requests');
+        return view('livewire.approved-loans');
     }
 }

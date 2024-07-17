@@ -31,6 +31,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
@@ -102,11 +103,15 @@ class LoanResource extends Resource
                                 ->schema([
                                     Select::make('loan_category_id')
                                         ->label('Loan Product')
-                                        ->options(
-                                            fn () => LoanCategory::where('company_id', auth()->user()->company_id)->get()->pluck('name', 'id')
-                                        )
+                                        ->relationship(
+                                            name: 'loanCategory', 
+                                            titleAttribute: 'name',
+                                            modifyQueryUsing: fn (Builder $query) => $query->where('company_id', auth()->user()->company_id)
+                                            )
                                         ->live()
+                                        ->getOptionLabelFromRecordUsing(fn (?Model $record): string => "{$record->name}/" .number_format($record->from) . " - ". number_format($record->to))
                                         ->searchable()
+                                        ->preload()
                                         ->required(),
                                     Select::make('formula_id')
                                         ->label('Interest Formula')

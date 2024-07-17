@@ -48,24 +48,66 @@ class LoanDetailsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('interest')
                     ->label('Interest')
                     ->state(function (LoanDetail $record) {
-                        if($record->formula->name == 'straight'){
-                            $answer = $record->amount * $record->loanCategory->interest / 100 ;
-                            return $answer;
-                        }
+                        $number_of_months = match ($record->duration) {
+                            'monthly' => $record->repayments,
+                            'weekly' => $record->repayments < 5 ? 1 : ceil($record->repayments / 4),
+                            'daily' => $record->repayments < 30 ? 1 : ceil($record->repayments / 30),
+                            default => $record->repayments,
+                        };
+
+                        $answer = $record->amount * $record->loanCategory->interest / 100 * $number_of_months;
+                        return round($answer);
                     })
                     ->numeric()
                     ->alignRight(),
-                Tables\Columns\TextColumn::make('principle')
+                Tables\Columns\TextColumn::make('colletion')
                     ->label('Collection')
                     ->state(function (LoanDetail $record) {
+                        $days = $record->repayments;
+
                         if($record->formula->name == 'straight'){
-                            $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / $record->repayments;
-                            return $answer;
-                        } elseif($record->formula->name == 'flatrate'){
-                            $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / $record->repayments;
-                            return $answer;
+                            switch ($record->duration) {
+                                case "daily":
+                                    $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / $record->repayments;
+                                    return round($answer);
+                                case "weekly":
+                                    $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / ($record->repayments);
+                                    return round($answer);
+                                case "monthly":
+                                    $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / ($record->repayments);
+                                    return round($answer);
+                            }
+                        } elseif($record->formula->name == 'fraterate' || $record->formula->name == 'reducing'){
+                            if ($record->duration == "daily") {
+                                $number_of_months = ceil($record->repayments / 30);
+                                    $answer = (($record->amount * $record->loanCategory->interest / 100 ) * $number_of_months + $record->amount) / $record->repayments;
+                                    return round($answer);
+                                } elseif($record->duration == "weekly") {
+                                    $number_of_months = $record->repayments < 5 ? 1 : ceil($record->repayments / 4);
+                                    
+                                    $answer = (($record->amount * $record->loanCategory->interest / 100 ) * $number_of_months + $record->amount) / $record->repayments;
+                                    return round($answer);
+                                } elseif("monthly") {
+                                    $answer = (($record->amount * $record->loanCategory->interest / 100 ) * $days + $record->amount) / $record->repayments;
+                                    return round($answer);
+                                }
+                            } else {
+                                if ($record->duration == "daily") {
+                                $number_of_months = ceil($record->repayments / 30);
+                                    $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / $record->repayments;
+                                    return round($answer);
+                                } elseif($record->duration == "weekly") {
+                                    $number_of_months = $record->repayments < 5 ? 1 : ceil($record->repayments / 4);
+                                    
+                                    $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / $record->repayments;
+                                    return round($answer);
+                                } elseif("monthly") {
+                                    $answer = ($record->amount * $record->loanCategory->interest / 100 + $record->amount) / $record->repayments;
+                                    return round($answer);
+                                }
+                            }
                         }
-                    })
+                    )
                     ->numeric()
                     ->alignRight(),
                 Tables\Columns\TextColumn::make('created_at')

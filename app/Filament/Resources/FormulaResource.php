@@ -27,7 +27,7 @@ class FormulaResource extends Resource
                     ->required()
                     ->options([
                         'straight' => 'Straight Formula',
-                        'flaterate' => 'Flatrate Formula',
+                        'fraterate' => 'Frate Rate Formula',
                         'reducing' => "Reducing Formula"
                     ])
                     ->native(false),
@@ -47,7 +47,7 @@ class FormulaResource extends Resource
                     ->searchable()
                     ->state(fn (Formula $record) => match ($record->name) {
                         "straight" => "Straight Formula",
-                        "flaterate" => "Flat Rate Formula",
+                        "fraterate" => "Frate Rate Formula",
                         "reducing" => "Reducing Formula",
                         default => "Unknown Formula"
                     }),
