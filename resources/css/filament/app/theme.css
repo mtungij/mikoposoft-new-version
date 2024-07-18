@@ -1,0 +1,23 @@
+@import "/vendor/filament/filament/resources/css/theme.css";
+
+@config 'tailwind.config.js';
+
+/* .fi-panel-app {
+    @apply bg-stone-100 dark:!bg-slate-950;
+} */
+
+.primary-bg-color {
+    @apply bg-cyan-700;
+}
+
+.secondary-bg-color {
+    @apply bg-cyan-800/60 text-white dark:bg-cyan-900/50 hover:dark:bg-cyan-900/70 hover:bg-cyan-800/70 transition-colors duration-150;
+}
+
+.bg-th-color {
+    @apply bg-cyan-700 text-white dark:bg-cyan-900/60 px-3 md:px-4;
+}
+
+.custom-td {
+    @apply px-3 md:px-4 py-1.5 border dark:border-gray-700;
+}

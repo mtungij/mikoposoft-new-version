@@ -35,6 +35,7 @@ class AppPanelProvider extends PanelProvider
             ->registration()
             ->font('Poppins')
             ->passwordReset()
+            ->sidebarWidth('280px')
             ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Cyan,
@@ -65,6 +66,7 @@ class AppPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->viteTheme('resources/css/filament/app/theme.css');
     }
 }
