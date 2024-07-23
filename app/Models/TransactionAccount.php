@@ -28,4 +28,9 @@ class TransactionAccount extends Model
     {
         return $this->hasOne(Flot::class);
     }
+
+    public function withdrawals(): HasMany
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
 }

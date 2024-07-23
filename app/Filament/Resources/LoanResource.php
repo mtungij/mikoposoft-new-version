@@ -55,7 +55,7 @@ class LoanResource extends Resource
                             Select::make('customer_id')
                                 ->label('Customer')
                                 ->options(
-                                    fn () => Customer::get()->pluck('full_name', 'id')
+                                    fn () => Customer::whereRelation('branch', 'company_id', auth()->user()->company_id)->pluck('full_name', 'id')
                                 )
                                 ->preload()
                                 ->searchable()
@@ -220,7 +220,7 @@ class LoanResource extends Resource
                 return auth()->user()->position == 'admin'? $query->where('company_id', auth()->user()->company_id): $query->where('branch_id', auth()->user()->branch_id);
             })
             ->columns([
-                TextColumn::make('branch.name'),
+                TextColumn::make('branch.nname'),
                 TextColumn::make('customer.full_name')
                     ->searchable(),
                 TextColumn::make('loanDetails.amount')

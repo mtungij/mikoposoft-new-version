@@ -17,4 +17,12 @@ class EditLoan extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if($data['status'] == 'approved') {
+            $data['approved_by'] = auth()->user()->id;
+        }
+        return $data;
+    }
 }

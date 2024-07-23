@@ -18,9 +18,15 @@ class Loan extends Model
         "company_id",
         "user_id",
         "customer_id",
+        "approved_by",
         "loan_type",
         "status",
     ];
+
+    public function isWithdrown(): bool
+    {
+        return Withdrawal::where('loan_id', $this->id)->exists();
+    }
 
     public function branch(): BelongsTo
     {
@@ -35,6 +41,11 @@ class Loan extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function loanDetails(): HasMany
@@ -61,4 +72,15 @@ class Loan extends Model
     {
         return $this->belongsTo(Customer::class);
     }
+
+    public function withdrawals(): HasMany
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
+    public function loanFeeRecords(): HasMany
+    {
+        return $this->hasMany(LoanFeeRecord::class);
+    }
+
 }
