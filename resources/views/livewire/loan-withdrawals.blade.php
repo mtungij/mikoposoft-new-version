@@ -8,19 +8,19 @@
             <div class="primary-bg-color text-white text-center">
                 Guarantors Information
             </div>
-            <table class="w-full table-auto border border-collapsible dark:border-gray-700">
+            <table class="w-full table-auto border border-collapsible dark:border-gray-700" wire:lazy>
                 <tbody>
                     <tr>
                         <th class="text-left p-4 border dark:border-gray-700">Name</th>
-                        <td class="text-left p-4 border dark:border-gray-700" wire:lazy>{{ $loan?->guarantors->first()->name ?? "-" }}</td>
+                        <td class="text-left p-4 border dark:border-gray-700">{{ $loan?->guarantors->first()->name ?? "-" }}</td>
                     </tr>
                     <tr>
                         <th class="text-left p-4 border dark:border-gray-700">Phone Number</th>
-                        <td class="text-left p-4 border dark:border-gray-700" wire:lazy>{{ $loan?->guarantors->first()->phone ?? "-" }}</td>
+                        <td class="text-left p-4 border dark:border-gray-700">{{ $loan?->guarantors->first()->phone ?? "-" }}</td>
                     </tr>
                     <tr>
                         <th class="text-left p-4 border dark:border-gray-700">Relationship</th>
-                        <td class="text-left p-4 border dark:border-gray-700" wire:lazy>{{ $loan?->guarantors->first()->relationship ?? "-" }}</td>
+                        <td class="text-left p-4 border dark:border-gray-700">{{ $loan?->guarantors->first()->relationship ?? "-" }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -30,7 +30,11 @@
                 Photo
             </div>
             <div class="flex justify-end">
-                <img src="{{asset('images/avatar-02.jpg')}}" alt="avatar1" class="max-w-full max-h-20">
+                @if ($loan?->customer?->img_url)
+                <img src="{{asset('/storage/'. $loan?->customer?->img_url)}}" alt="avatar1" class="w-fit h-fit">
+                @else
+                <img src="{{asset('images/avatar-01.jpg')}}" alt="avatar1" class="w-fit max-h-20">
+                @endif
             </div>
         </div>
         <div>
@@ -38,10 +42,10 @@
                 Menu
             </div>
             <div class="p-4 space-y-3">
-                <button wire.loading.attr="disabled" class="block text-center w-full secondary-bg-color p-1 rounded" wire:click="mountAction('deposit')">Deposit</button>
-                <button wire.loading.attr="disabled" class="block text-center w-full secondary-bg-color p-1 rounded" wire:click="mountAction('withdraw')">Withdraw</button>
-                <button wire.loading.attr="disabled" href="" class="block text-center w-full secondary-bg-color p-1 rounded">Payment Satatement</button>
-                <button class="block text-center w-full secondary-bg-color p-1 rounded" wire:click="mountAction('my')">Penalt</button>
+                <button wire.loading.attr="disabled" @disabled($customer_id == '') class="block text-center w-full secondary-bg-color p-1 rounded" wire:click="mountAction('deposit')">Deposit</button>
+                <button wire.loading.attr="disabled" @disabled($customer_id == '' || $loan_end_date) class="block text-center w-full secondary-bg-color p-1 rounded" wire:click="mountAction('withdraw')">{{ $loan_end_date ? '-------': 'Withdraw'}}</button>
+                <button wire.loading.attr="disabled" @disabled($customer_id == '') class="block text-center w-full secondary-bg-color p-1 rounded">Payment Satatement</button>
+                <button wire.loading.attr="disabled" @disabled($customer_id == '') class="block text-center w-full secondary-bg-color p-1 rounded" wire:click="mountAction('my')">Penalt</button>
             </div>
         </div>
     </div>
@@ -50,7 +54,7 @@
          <div class="primary-bg-color text-white text-left px-4">
             ----
         </div>
-        <div class="overflow-x-auto whitespace-nowrap">
+        <div class="overflow-x-auto whitespace-nowrap" wire:lazy>
             <table class="w-full table-auto border border-collapsible dark:border-gray-700">
                 
                 
@@ -66,8 +70,8 @@
                 <tbody class="">
                     <tr>
                         <td class="custom-td text-left">{{ $loan?->customer?->phone ?? '--------' }}</td>
-                        <td class="custom-td text-left">YYYY-MM-DD</td>
-                        <td class="custom-td text-left">YYY-MM-DD</td>
+                        <td class="custom-td text-left">{{ $withdrawal?->date ?? 'YYYY-MM-DD'}}</td>
+                        <td class="custom-td text-left">{{ $loan_end_date ?? 'YYY-MM-DD' }}</td>
                         <td class="custom-td text-right">{{ number_format($loan?->loanDetails()->first()->amount ?? 0) }}</td>
                         <td class="custom-td text-right">{{ number_format($collection ?? 0) }}</td>
                         <td class="custom-td text-right">{{ 0 }}</td>
@@ -81,7 +85,7 @@
          <div class="primary-bg-color text-white text-left px-4">
             Loan Satatement
         </div>
-        <div class="overflow-x-auto whitespace-nowrap">
+        <div class="overflow-x-auto whitespace-nowrap" wire:lazy>
             <table class="w-full table-auto border border-collapsible dark:border-gray-700">
                 <thead>
                     <tr>

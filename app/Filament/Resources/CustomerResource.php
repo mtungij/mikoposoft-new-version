@@ -149,6 +149,8 @@ class CustomerResource extends Resource
                     Forms\Components\FileUpload::make('img_url')
                         ->directory('profiles')
                         ->avatar()
+                        ->minSize(300)
+                        ->minSize(300)
                         ->imageEditor(),
                     ])
                
@@ -163,8 +165,8 @@ class CustomerResource extends Resource
             })
             ->columns([
                 Tables\Columns\ImageColumn::make('img_url')
-                ->label('Passport')
-                ->circular(),
+                    ->label('Passport')
+                    ->circular(),
                 Tables\Columns\TextColumn::make('branch.name')
                     ->numeric()
                     ->sortable(),
@@ -196,7 +198,6 @@ class CustomerResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('account_type')
                     ->toggleable(isToggledHiddenByDefault: true),
-                
                 Tables\Columns\TextColumn::make('status')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
