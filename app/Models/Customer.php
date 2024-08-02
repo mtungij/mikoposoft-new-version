@@ -51,4 +51,9 @@ class Customer extends Model
     {
         return $this->hasMany(Loan::class);
     }
+
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(Deposit::class);
+    }
 }

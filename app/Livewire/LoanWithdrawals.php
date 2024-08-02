@@ -59,7 +59,13 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
 
     public ?string $loan_end_date = null;
 
+    public ?int $lastPayment = 0;
+
     public ?int $loanAmount = 0;
+
+    public ?int $debt = 0;
+
+    public ?int $recovery_amount = 0;
 
     public function mount() 
     {
@@ -71,52 +77,158 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             $this->getVoucherStatus();
             $this->getLoanEndDate();
             $this->getLoanAmount();
+            $this->getLastPayment();
+            $this->getDebt();
     }
 
+    #[On('customer-changed')]
+    public function getLastPayment()
+    {
+        $lastPayment = Deposit::where('loan_id', $this?->loan?->id)->latest()->first();
+        $this->lastPayment = $lastPayment ? $lastPayment->amount : 0;
+    }
 
     #[On('customer-changed')]
+    public function getDebt()
+    {
+        $totalDeposits = Deposit::where('loan_id', $this?->loan?->id)->sum('amount');
+        $this->debt = $this->loanAmount - $totalDeposits;
+    }
+
     public function getVoucherStatus()
     {
         $withdrawalExists = Withdrawal::where('customer_id', $this->customer_id)->first();
         $this->vourcher_status = $withdrawalExists ? 'Old' : 'New';
     }
 
-    public function getLoanAmount()
+    public function getLoanEndDate()
     {
-        $days = $this?->loan?->loanDetails()->first()->repayments;
+        $duration = $this->loan?->loanDetails()->first()->duration;
+        $repayments = $this->loan?->loanDetails()->first()->repayments;
+        $withdrawal = Withdrawal::where('loan_id', $this->loan?->id)->first();
+
+        if($withdrawal) {
+            $this->loan_end_date = match ($duration) {
+                "daily" => $withdrawal->created_at->addDays($repayments)->format('Y-m-d'),
+                'weekly' => $withdrawal->created_at->addWeeks($repayments)->format('Y-m-d'),
+                'monthly' => $withdrawal->created_at->addMonths($repayments)->format('Y-m-d'),
+            };
+        } else {
+            $this->loan_end_date = null;
+        }
+    }
+
+    // #[On('customer-changed')]
+    public function getBalanceAndStatus()
+    {
+        $loanFee = LoanFee::where('company_id', auth()->user()->company_id)->oldest()->first();
+
+        $loan_fees = ($loanFee && $loanFee->category == 'general') ?
+                            LoanFee::where('company_id', auth()->user()->company_id)->get() : 
+                            LoanCategoryFee::whereRelation('loanCategory', 'company_id', auth()->user()->company_id)->get();
+
+         $balance = $this?->loan?->loanDetails()->first()->amount ?? 0;
+         if($this->customer_id) {
+            foreach ($loan_fees as $loan_fee) {
+                switch ($loan_fee->fee_type) {
+                    case 'money':
+                        $balance -= $loan_fee->fee_amount;
+                        break;
+                    case 'percentage':
+                        $balance -= $this->loan?->loanDetails()?->first()?->amount * ($loan_fee?->fee_amount / 100);
+                        break;
+                }
+            }
+
+            
+        }
+        $this->withdrawal_amount = $balance;
+    }
+
+    #[On('customer-changed')]
+    public function getCollection()
+    {
+       $days = $this?->loan?->loanDetails()->first()->repayments;
        if($this->customer_id) {
            if($this->loan->loanDetails()->first()->formula->name == 'straight'){
-               $this->loanAmount = match ($this->loan->loanDetails()->first()->duration) {
-                   "daily" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
-                   "weekly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
+               $this->collection = match ($this->loan->loanDetails()->first()->duration) {
+                   "daily" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) ,
+                   "weekly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) ,
                    "monthly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
                };
            } elseif($this->loan->loanDetails()->first()->formula->name == 'fraterate' || $this->loan->loanDetails()->first()->formula->name == 'reducing'){
                if ($this->loan->loanDetails()->first()->duration == "daily") {
                    $number_of_months = ceil($this->loan->loanDetails()->first()->repayments / 30);
-                   $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100) * $number_of_months + $this->loan->loanDetails()->first()->amount;
+                   $this->collection = (($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 ) * $number_of_months + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
                } elseif($this->loan->loanDetails()->first()->duration == "weekly") {
                    $number_of_months = $this->loan->loanDetails()->first()->repayments < 5 ? 1 : ceil($this->loan->loanDetails()->first()->repayments / 4);
                    
-                   $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100) * $number_of_months + $this->loan->loanDetails()->first()->amount;
+                   $this->collection = (($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 ) * $number_of_months + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
                } elseif("monthly") {
-                   $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100) * $days + $this->loan->loanDetails()->first()->amount;
+                   $this->collection = (($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 ) * $days + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
                }
            } else {
                if ($this->loan->loanDetails()->first()->duration == "daily") {
                $number_of_months = ceil($this->loan->loanDetails()->first()->repayments / 30);
-                   $this->loanAmount = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
+                   $this->collection = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
                } elseif($this->loan->loanDetails()->first()->duration == "weekly") {
                    $number_of_months = $this->loan->loanDetails()->first()->repayments < 5 ? 1 : ceil($this->loan->loanDetails()->first()->repayments / 4);
                    
-                   $this->loanAmount = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
+                   $this->collection = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
                } elseif("monthly") {
-                   $this->loanAmount = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
+                   $this->collection = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
                }
            }
        } else {
+           $this->collection = 0;
+       }
+    }
+
+    public function getLoanAmount()
+    {
+        $days = $this?->loan?->loanDetails()->first()->repayments;
+       if($this->customer_id) {
+            switch ($this->loan->loanDetails()->first()->formula->name) {
+                case 'straight':
+                    $this->loanAmount = match ($this->loan->loanDetails()->first()->duration) {
+                        "daily" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
+                        "weekly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
+                        "monthly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
+                    };
+                    break;
+                case 'fraterate':
+                    if ($this->loan->loanDetails()->first()->duration == "daily") {
+                        $number_of_months = ceil($this->loan->loanDetails()->first()->repayments / 30);
+                        $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100) * $number_of_months + $this->loan->loanDetails()->first()->amount;
+                    } elseif ($this->loan->loanDetails()->first()->duration == "weekly") {
+                        $number_of_months = $this->loan->loanDetails()->first()->repayments < 5 ? 1 : ceil($this->loan->loanDetails()->first()->repayments / 4);
+
+                        $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100) * $number_of_months + $this->loan->loanDetails()->first()->amount;
+                    } elseif ("monthly") {
+                        $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100) * $days + $this->loan->loanDetails()->first()->amount;
+                    }
+                    break;
+                default:
+                    if ($this->loan->loanDetails()->first()->duration == "daily") {
+                        $number_of_months = ceil($this->loan->loanDetails()->first()->repayments / 30);
+                        $this->loanAmount = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
+                    } elseif ($this->loan->loanDetails()->first()->duration == "weekly") {
+                        $number_of_months = $this->loan->loanDetails()->first()->repayments < 5 ? 1 : ceil($this->loan->loanDetails()->first()->repayments / 4);
+
+                        $this->loanAmount = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
+                    } elseif ("monthly") {
+                        $this->loanAmount = $this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount;
+                    }
+                    break;
+            }
+       } else {
            $this->loanAmount = 0;
        }
+    }
+
+    public function getRecoveryAmount()
+    {
+        
     }
 
     public function form(Form $form): Form
@@ -153,7 +265,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             ]);
     }
 
-     public function depositAction(): CreateAction
+    public function depositAction(): CreateAction
     {
         return CreateAction::make()
             ->model(Deposit::class)
@@ -162,6 +274,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                 $data['user_id'] = auth()->id();
                 $data['customer_id'] = $this->customer_id;
                 $data['loan_id'] = $this->loan?->id;
+                $data['balance'] = $data['amount'];
 
                 $float = Flot::where([
                     ['transaction_account_id', '=', $data['transaction_account_id']],
@@ -175,7 +288,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                         ->send();
                     $action->halt();
                 } else {
-                    $float->decrement('amount', $data['amount']);
+                    $float->increment('amount', $data['amount']);
                 }
                 
                 return $data;
@@ -195,23 +308,23 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                             ->label(__('Collection'))
                             ->mask(RawJs::make('$money($input)'))
                             ->stripCharacters(',')
+                            ->default($this->collection)
                             ->readOnly()
                             ->required(),
                         TextInput::make('dept')
                             ->mask(RawJs::make('$money($input)'))
                             ->stripCharacters(',')
-                            ->readOnly()
-                            ->required(),
+                            ->default($this->debt)
+                            ->readOnly(),
                         TextInput::make('recovery_amount')
                             ->mask(RawJs::make('$money($input)'))
                             ->stripCharacters(',')
-                            ->readOnly()
-                            ->required(),
+                            ->readOnly(),
                         TextInput::make('last_payment')
                             ->mask(RawJs::make('$money($input)'))
                             ->stripCharacters(',')
-                            ->readOnly()
-                            ->required(),
+                            ->default($this->lastPayment)
+                            ->readOnly(),
                         TextInput::make('vourcher_status')
                             ->label(__('Voucher Status')),
                         DatePicker::make('receipt_date')
@@ -220,11 +333,10 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                         TextInput::make('amount')
                             ->mask(RawJs::make('$money($input)'))
                             ->stripCharacters(',')
-                            ->readOnly()
                             ->required(),
                         Select::make('transaction_account_id')
                             ->label('Transaction Account')
-                            ->options(fn () => TransactionAccount::where('company_id', auth()->user()->company_id)->pluck('name', 'id'))
+                            ->options(fn () => Flot::with('transactionAccount')->where('company_id', auth()->user()->company_id)->get()->pluck('transactionAccount.name', 'id'))
                             ->native(false)
                             ->required(),
                         TextInput::make('payer_name'),
@@ -287,51 +399,6 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             ]);
     }
 
-
-    public function getLoanEndDate()
-    {
-        $duration = $this->loan?->loanDetails()->first()->duration;
-        $repayments = $this->loan?->loanDetails()->first()->repayments;
-        $withdrawal = Withdrawal::where('loan_id', $this->loan?->id)->first();
-
-        if($withdrawal) {
-            $this->loan_end_date = match ($duration) {
-                "daily" => $withdrawal->created_at->addDays($repayments)->format('Y-m-d'),
-                'weekly' => $withdrawal->created_at->addWeeks($repayments)->format('Y-m-d'),
-                'monthly' => $withdrawal->created_at->addMonths($repayments)->format('Y-m-d'),
-            };
-        } else {
-            $this->loan_end_date = null;
-        }
-    }
-
-    // #[On('customer-changed')]
-    public function getBalanceAndStatus()
-    {
-        $loanFee = LoanFee::where('company_id', auth()->user()->company_id)->oldest()->first();
-
-        $loan_fees = ($loanFee && $loanFee->category == 'general') ?
-                            LoanFee::where('company_id', auth()->user()->company_id)->get() : 
-                            LoanCategoryFee::whereRelation('loanCategory', 'company_id', auth()->user()->company_id)->get();
-
-         $balance = $this?->loan?->loanDetails()->first()->amount ?? 0;
-         if($this->customer_id) {
-            foreach ($loan_fees as $loan_fee) {
-                switch ($loan_fee->fee_type) {
-                    case 'money':
-                        $balance -= $loan_fee->fee_amount;
-                        break;
-                    case 'percentage':
-                        $balance -= $this->loan?->loanDetails()?->first()?->amount * ($loan_fee?->fee_amount / 100);
-                        break;
-                }
-            }
-
-            
-        }
-        $this->withdrawal_amount = $balance;
-    }
-    
     public function table(Table $table): Table
     {
         return $table
@@ -377,49 +444,11 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             ]);
     }
 
-    #[On('customer-changed')]
-    public function getCollection()
-    {
-       $days = $this?->loan?->loanDetails()->first()->repayments;
-       if($this->customer_id) {
-           if($this->loan->loanDetails()->first()->formula->name == 'straight'){
-               $this->loanAmount = match ($this->loan->loanDetails()->first()->duration) {
-                   "daily" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) ,
-                   "weekly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) ,
-                   "monthly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
-               };
-           } elseif($this->loan->loanDetails()->first()->formula->name == 'fraterate' || $this->loan->loanDetails()->first()->formula->name == 'reducing'){
-               if ($this->loan->loanDetails()->first()->duration == "daily") {
-                   $number_of_months = ceil($this->loan->loanDetails()->first()->repayments / 30);
-                   $this->loanAmount = (($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 ) * $number_of_months + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
-               } elseif($this->loan->loanDetails()->first()->duration == "weekly") {
-                   $number_of_months = $this->loan->loanDetails()->first()->repayments < 5 ? 1 : ceil($this->loan->loanDetails()->first()->repayments / 4);
-                   
-                   $this->loanAmount = (($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 ) * $number_of_months + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
-               } elseif("monthly") {
-                   $this->loanAmount = (($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 ) * $days + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
-               }
-           } else {
-               if ($this->loan->loanDetails()->first()->duration == "daily") {
-               $number_of_months = ceil($this->loan->loanDetails()->first()->repayments / 30);
-                   $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) / $this->loan->loanDetails()->first()->repayments;
-               } elseif($this->loan->loanDetails()->first()->duration == "weekly") {
-                   $number_of_months = $this->loan->loanDetails()->first()->repayments < 5 ? 1 : ceil($this->loan->loanDetails()->first()->repayments / 4);
-                   
-                   $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount);
-               } elseif("monthly") {
-                   $this->loanAmount = ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount);
-               }
-           }
-       } else {
-           $this->loanAmount = 0;
-       }
-    }
-
     public function render()
     {
         $loan_fees = [];
         $withdrawal = Withdrawal::with(['user', 'transactionAccount'])->where('loan_id', $this->loan?->id)->first();
+        $deposits = Deposit::where('loan_id', $this?->loan?->id)->orderBy('receipt_date')->orderBy('checked_by', 'desc')->get();
 
         $loanFee = LoanFee::where('company_id', auth()->user()->company_id)->oldest()->first();
         if($this->customer_id) {
@@ -440,6 +469,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
         return view('livewire.loan-withdrawals', [
             'loan_fees' => $loan_fees,
             'withdrawal' => $withdrawal,
+            'deposits' => $deposits,
         ]);
     }
 }

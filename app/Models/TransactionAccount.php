@@ -33,4 +33,9 @@ class TransactionAccount extends Model
     {
         return $this->hasMany(Withdrawal::class);
     }
+
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(Deposit::class);
+    }
 }

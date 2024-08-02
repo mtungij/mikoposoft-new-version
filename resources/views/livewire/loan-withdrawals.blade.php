@@ -97,6 +97,16 @@
                     </tr>
                 </thead>
                 <tbody>
+                     @foreach ($deposits as $deposit)
+                        <tr key="{{ $deposit->id }}" wire:poll.1s>
+                            <td class="custom-td text-left">{{ $deposit->receipt_date }}</td>
+                            <td class="custom-td text-left" style="text-transform: uppercase">{{ $deposit->checked_by }}</td>
+                            <td class="custom-td text-right">{{ number_format($deposit->amount, 2) }}</td>
+                            <td class="custom-td text-right">{{ number_format($deposit->withdraw, 2) }}</td>
+                            <td class="custom-td text-right">{{ number_format($deposit->balance, 2) }}</td>
+                        </tr>
+                    @endforeach
+
                 @php
                     $balance = $loan?->loanDetails()->first()->amount ?? 0;
                     $withdraw = 0;
