@@ -88,4 +88,27 @@ class Loan extends Model
         return $this->hasMany(Deposit::class);
     }
 
+    public function loanRecovery(): HasOne
+    {
+        return $this->hasOne(LoanRecovery::class);
+    }
+
+    public function getLoanDetail(int $loanId)
+    {
+        return LoanDetail::where('loan_id', $loanId)->first();
+    }
+
+    public function getNextLoanreturnDate(int $loanId)
+    {
+        $loan = LoanDetail::where('loan_id', $loanId)->first();
+
+        $next_loan_return_date = match ($loan->duration) {
+            "daily" => now()->addDay()->format('Y-m-d'),
+            'weekly' => now()->addWeek()->format('Y-m-d'),
+            'monthly' => now()->addMonth()->format('Y-m-d'),
+        };
+
+        return $next_loan_return_date;
+    }
+
 }

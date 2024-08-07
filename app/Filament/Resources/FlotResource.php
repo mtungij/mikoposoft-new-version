@@ -100,10 +100,10 @@ class FlotResource extends Resource
                     ->label(__('Company Account'))
                     ->searchable(),
                 TextColumn::make('toBranch.name'),
+                TextColumn::make('transactionAccount.name')
+                ->label('To Branch Account'),
                 TextColumn::make('amount')
                     ->numeric(),
-                TextColumn::make('transactionAccount.name')
-                    ->label('To Branch Account'),
                 TextColumn::make('withdrawal_charges')
                     ->numeric(),
                 TextColumn::make('created_at')

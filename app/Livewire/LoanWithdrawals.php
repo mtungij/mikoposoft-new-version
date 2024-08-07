@@ -28,6 +28,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\Attributes\Url;
@@ -79,6 +80,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             $this->getLoanAmount();
             $this->getLastPayment();
             $this->getDebt();
+            $this->getRecoveryAmount();
     }
 
     #[On('customer-changed')]
@@ -88,11 +90,15 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
         $this->lastPayment = $lastPayment ? $lastPayment->amount : 0;
     }
 
-    #[On('customer-changed')]
     public function getDebt()
     {
         $totalDeposits = Deposit::where('loan_id', $this?->loan?->id)->sum('amount');
         $this->debt = $this->loanAmount - $totalDeposits;
+    }
+
+    public function getRecoveryAmount()
+    {
+        $this->recovery_amount = $this?->loan?->loanRecovery?->amount ?? 0;
     }
 
     public function getVoucherStatus()
@@ -105,7 +111,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
     {
         $duration = $this->loan?->loanDetails()->first()->duration;
         $repayments = $this->loan?->loanDetails()->first()->repayments;
-        $withdrawal = Withdrawal::where('loan_id', $this->loan?->id)->first();
+        $withdrawal = Deposit::where([['loan_id', $this->loan?->id], ['status', 'withdrawal']])->first();
 
         if($withdrawal) {
             $this->loan_end_date = match ($duration) {
@@ -226,11 +232,6 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
        }
     }
 
-    public function getRecoveryAmount()
-    {
-        
-    }
-
     public function form(Form $form): Form
     {
         return $form
@@ -254,6 +255,8 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                         $this->getVoucherStatus();
                         $this->getLoanEndDate();
                         $this->getLoanAmount();
+                        $this->getRecoveryAmount();
+                        $this->getDebt();
                         
                         Notification::make()
                             ->title("Customer changed")
@@ -271,27 +274,80 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             ->model(Deposit::class)
             ->label(__('Deposit'))
             ->mutateFormDataUsing(function ($data, CreateAction $action) {
+                $loan = new Loan();
+
                 $data['user_id'] = auth()->id();
                 $data['customer_id'] = $this->customer_id;
                 $data['loan_id'] = $this->loan?->id;
+                $data['desc'] = auth()->user()->name . "/ loan return/ {$this?->loan?->loanDetails()->first()->duration} ({$this?->loan?->loanDetails()->first()->repayments})";
+                $data['end_date'] = $this->loan_end_date;
+                // $data['next_return_date'] = $loan->getNextLoanreturnDate($this?->loan?->id);
+                $data['duration'] = $this?->loan?->loanDetails()?->first()->duration;
+                $data['repayments'] = $this?->loan?->loanDetails()?->first()->repayments;
                 $data['balance'] = $data['amount'];
 
-                $float = Flot::where([
-                    ['transaction_account_id', '=', $data['transaction_account_id']],
-                    ['company_id', '=', auth()->user()->company_id],
-                    ])->first();
+                $lastDeposit = Deposit::where('loan_id', $this?->loan?->id)->latest()->first();
 
-                if($float->amount < $data['amount']) {
-                    Notification::make()
-                        ->title("Insufficient float balance. Please top up your float account.")
-                        ->warning()
-                        ->send();
-                    $action->halt();
-                } else {
-                    $float->increment('amount', $data['amount']);
+                if($lastDeposit) {
+                    $data['balance'] += $lastDeposit->balance;
                 }
                 
+                // $penalts_total = Deposit::whereColumn('collection' < 'amount')->where('customer_id', $this->customer_id)->sum('');
+
                 return $data;
+            })
+             ->using(function (array $data, string $model): ?Model {
+                    $float = Flot::where([
+                            ['transaction_account_id', $data['transaction_account_id']],
+                            ['company_id', auth()->user()->company_id],
+                            ['to_branch_id', auth()->user()->branch_id],
+                        ])->first();
+
+                    if($float) {
+                        $float->increment('amount', $data['amount']);
+                    }
+
+                    $depositExist = Deposit::where([
+                        ['receipt_date', '=', $data['receipt_date']],
+                        ['checked_by','=', 'customer'],
+                        ['loan_id','=', $this?->loan?->id],
+                    ])->first();
+                    
+
+                    if($depositExist) {
+                        $depositExist->increment('amount', $data['amount']);
+                        $depositExist->increment('balance', $data['amount']);
+                        return null;
+                    }
+                    
+                    return $model::create($data);
+                })
+            ->after(function (array $data) {
+                if($this->recovery_amount > 0) {
+                    $today_deposit_data = [
+                        'loan_id' => $this?->loan?->id,
+                        'customer_id' => $this->customer_id,
+                        'transaction_account_id' => $data['transaction_account_id'],
+                        'user_id' => $data['user_id'],
+                        'amount' => 0,
+                        'withdraw' => $this->recovery_amount >= $data['amount'] ? $data['amount']: $this->recovery_amount,
+                        'balance' => $this->recovery_amount >= $data['amount'] ? $this->recovery_amount - $data['amount']: $data['amount'],
+                        'collection' => $data['collection'],
+                        'loan_amount' => $data['loan_amount'],
+                        'checked_by' => 'system',
+                        'checked' => 'yes',
+                        'duration' => $data['duration'],
+                        'repayments' => $data['repayments'],
+                        'end_date' => $data['end_date'],
+                        'desc' => "system/ recovery pending EMI return/ ". $this?->loan->loanDetails()?->first()?->duration . "({$this?->loan->loanDetails()?->first()?->repayments})",
+                        'receipt_date' => $data['receipt_date'],
+                        'payer_name' => $data['payer_name'],
+                    ];
+
+                    $this->loan->loanRecovery->decrement('amount', $this->recovery_amount >= $data['amount'] ? $data['amount']: $this->recovery_amount);
+
+                    $systemDeposit = Deposit::create($today_deposit_data);
+                }
             })
             ->form([
                 Section::make()
@@ -319,6 +375,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                         TextInput::make('recovery_amount')
                             ->mask(RawJs::make('$money($input)'))
                             ->stripCharacters(',')
+                            ->default($this->recovery_amount)
                             ->readOnly(),
                         TextInput::make('last_payment')
                             ->mask(RawJs::make('$money($input)'))
@@ -329,6 +386,8 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                             ->label(__('Voucher Status')),
                         DatePicker::make('receipt_date')
                             ->label(__('Receipt Date'))
+                            ->default(today())
+                            ->readOnly()
                             ->required(),
                         TextInput::make('amount')
                             ->mask(RawJs::make('$money($input)'))
@@ -347,12 +406,24 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
     public function withdrawAction(): CreateAction
     {
         return CreateAction::make()
-            ->model(Withdrawal::class)
+            ->model(Deposit::class)
             ->label(__('Withdrawal'))
             ->mutateFormDataUsing(function ($data, CreateAction $action) {
+                $loan = new Loan();
+
                 $data['user_id'] = auth()->id();
                 $data['customer_id'] = $this->customer_id;
                 $data['loan_id'] = $this->loan?->id;
+                $data['desc'] = auth()->user()->name . "/ cash withdraw/ {$this?->loan?->loanDetails()->first()->duration} ({$this?->loan?->loanDetails()->first()->repayments})";
+                $data['end_date'] = $this->loan_end_date;
+                $data['next_return_date'] = $loan->getNextLoanreturnDate($this?->loan?->id);
+                $data['duration'] = $this?->loan?->loanDetails()?->first()->duration;
+                $data['repayments'] = $this?->loan?->loanDetails()?->first()->repayments;
+                $data['status'] = 'withdrawal';
+                $data['withdraw'] = $data['amount'];
+                $data['loan_amount'] = $this?->loanAmount;
+                $data['amount'] = 0;
+
 
                 $float = Flot::where([
                     ['transaction_account_id', '=', $data['transaction_account_id']],
@@ -371,6 +442,14 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                 
                 return $data;
             })
+            ->using(function (array $data, string $model): ?Model {
+                    return $model::create($data);
+                })
+            ->after(function (array $data) {
+                 Customer::find($data['customer_id'])->update(['status' => 'withdrawal']);
+
+                 // create the first deposit with desc = loan withdrawal
+            })
             ->form([
                 Section::make()
                     ->columns(2)
@@ -387,7 +466,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                             ->options(fn () => TransactionAccount::where('company_id', auth()->user()->company_id)->pluck('name', 'id'))
                             ->native(false)
                             ->required(),
-                        DatePicker::make('date')
+                        DatePicker::make('receipt_date')
                             ->label(__('Withdrawal Date'))
                             ->default(now()->format('Y-m-d'))
                             ->required(),
@@ -447,8 +526,8 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
     public function render()
     {
         $loan_fees = [];
-        $withdrawal = Withdrawal::with(['user', 'transactionAccount'])->where('loan_id', $this->loan?->id)->first();
-        $deposits = Deposit::where('loan_id', $this?->loan?->id)->orderBy('receipt_date')->orderBy('checked_by', 'desc')->get();
+        $withdrawal = Deposit::with(['user', 'transactionAccount'])->where([['loan_id', $this->loan?->id], ['status', 'withdrawal']])->first();
+        $deposits = Deposit::where('loan_id', $this?->loan?->id)->latest()->get();
 
         $loanFee = LoanFee::where('company_id', auth()->user()->company_id)->oldest()->first();
         if($this->customer_id) {
@@ -459,9 +538,9 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             if($loanFeedRecordExists) {
                 $loan_fees = LoanFeeRecord::where('loan_id', $this->loan->id)->get();
             } else {
-                //create loan fee records from loan fees
+                // create loan fee records from loan fees
                 $this->loan->loanFeeRecords()->createMany($loan_fees->toArray());
-                //refetch the loan fee records
+                // create the loan fee records
                 $loan_fees = LoanFeeRecord::where('loan_id', $this->loan->id)->get();
             }
         }

@@ -1,6 +1,10 @@
 <?php
 
 use App\Models\Deposit;
+use App\Models\Customer;
+use App\Models\LoanRecovery;
+use App\Models\Loan;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -11,44 +15,55 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::call(function () {
-    $todayDeposits = DB::table('deposits')->where('checked_by', 'customer')->whereDate('receipt_date', today())->get();
-    if($todayDeposits) {
-        foreach ($todayDeposits as $deposit) {
-            $depositExists = DB::table('deposits')
-                    ->where([['checked_by', 'system'], ['customer_id', $deposit->customer_id]])
-                    ->whereDate('receipt_date', today())
-                    ->first();
-            $yesteriday_deposit = DB::table('deposits')
-                    ->where([['checked_by', 'system']])
-                    ->whereDate('receipt_date', today()->subDay())
-                    ->first();
+    $loan = new Loan();
+    $customers = Customer::with(['deposits' => function (Builder $query) {
+                            return $query->where('checked', 'no')->whereDate('end_date', '<=', today());
+                        }])->where('status', 'withdrawal')->get();                        
+                            
+    if($customers) {
+        foreach ($customers as $customer) {
+            $lastDeposit = $customer?->deposits()?->latest()->first();
 
-            $today_deposit_data = [
-                'loan_id' => $deposit->loan_id,
-                'customer_id' => $deposit->customer_id,
-                'transaction_account_id' => $deposit->transaction_account_id,
-                'user_id' => $deposit->user_id,
-                'amount' => 0,
-                
-                'collection' => $deposit->collection,
-                'loan_amount' => $deposit->loan_amount,
-                'checked_by' => 'system',
-                'receipt_date' => $deposit->receipt_date,
-                'payer_name' => $deposit->payer_name,
-            ];
-
-            if($yesteriday_deposit) {
-                $today_deposit_data['balance'] += $yesteriday_deposit->balance;
+            if($lastDeposit && $lastDeposit->next_return_date == date('Y-m-d')) {
+                $today_deposit_data = [
+                    'loan_id' => $lastDeposit->loan_id,
+                    'customer_id' => $lastDeposit->customer_id,
+                    'transaction_account_id' => $lastDeposit->transaction_account_id,
+                    'user_id' => $lastDeposit->user_id,
+                    'desc' => "system/ loan return/ {$loan->getLoanDetail($lastDeposit->loan_id)->duration} ({$loan->getLoanDetail($lastDeposit->loan_id)->repayments})",
+                    'amount' => 0,
+                    'withdraw' => $lastDeposit->balance > $lastDeposit->collection ? $lastDeposit->collection: $lastDeposit->balance,
+                    'balance' => $lastDeposit->balance > $lastDeposit->collection ? $lastDeposit->balance - $lastDeposit->collection: 0,
+                    'collection' => $lastDeposit->collection,
+                    'loan_amount' => $lastDeposit->loan_amount,
+                    'checked_by' => 'system',
+                    'checked' => 'yes',
+                    'duration' => $lastDeposit->duration,
+                    'repayments' => $lastDeposit->repayments,
+                    'end_date' => $lastDeposit->end_date,
+                    'next_return_date' => $loan->getNextLoanreturnDate($lastDeposit->loan_id),
+                    'receipt_date' => $lastDeposit->receipt_date,
+                    'payer_name' => $lastDeposit->payer_name,
+                ];
+    
+    
+                $loanRecovery = LoanRecovery::where('loan_id', $lastDeposit->loan_id)->first();
+    
+                $amount = $lastDeposit->collection - $lastDeposit->balance;
+    
+                if($lastDeposit->balance < $lastDeposit->collection) {
+                    if($loanRecovery) {
+                        $loanRecovery->increment('amount', $amount);
+                    }
+                    LoanRecovery::create(['loan_id' => $lastDeposit->loan_id, 'amount' => $amount]);
+                }
+                $lastDeposit->update(['checked' => 'yes']);
+    
+                $systemDeposit = Deposit::create($today_deposit_data);
+    
+                // sub the balance of todays deposit
+                // $lastDeposit->decrement('balance', $lastDeposit->balance);
             }
-
-            $today_deposit_data['withdraw'] = $deposit->balance > $deposit->collection ? $deposit->collection: $deposit->balance;
-            $today_deposit_data['balance'] = $deposit->balance > $deposit->collection ? $deposit->amount - $deposit->collection: 0;
-
-            if($depositExists) {
-                continue;
-            }
-
-            Deposit::create($today_deposit_data);
         }
     }
-})->everyTwoMinutes();
+})->everyMinute();

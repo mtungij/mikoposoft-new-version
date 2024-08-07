@@ -70,7 +70,7 @@
                 <tbody class="">
                     <tr>
                         <td class="custom-td text-left">{{ $loan?->customer?->phone ?? '--------' }}</td>
-                        <td class="custom-td text-left">{{ $withdrawal?->date ?? 'YYYY-MM-DD'}}</td>
+                        <td class="custom-td text-left">{{ $withdrawal?->receipt_date ?? 'YYYY-MM-DD'}}</td>
                         <td class="custom-td text-left">{{ $loan_end_date ?? 'YYY-MM-DD' }}</td>
                         <td class="custom-td text-right">{{ number_format($loan?->loanDetails()->first()->amount ?? 0) }}</td>
                         <td class="custom-td text-right">{{ number_format($collection ?? 0) }}</td>
@@ -100,7 +100,7 @@
                      @foreach ($deposits as $deposit)
                         <tr key="{{ $deposit->id }}" wire:poll.1s>
                             <td class="custom-td text-left">{{ $deposit->receipt_date }}</td>
-                            <td class="custom-td text-left" style="text-transform: uppercase">{{ $deposit->checked_by }}</td>
+                            <td class="custom-td text-left" style="text-transform: uppercase">{{ $deposit->desc }}</td>
                             <td class="custom-td text-right">{{ number_format($deposit->amount, 2) }}</td>
                             <td class="custom-td text-right">{{ number_format($deposit->withdraw, 2) }}</td>
                             <td class="custom-td text-right">{{ number_format($deposit->balance, 2) }}</td>
@@ -143,15 +143,6 @@
                 });
                 $key =1;
                 @endphp
-                @if ($withdrawal)
-                    <tr>
-                        <td class="custom-td text-left">{{ date('Y-m-d', strtotime($withdrawal?->created_at)) }}</td>
-                        <td class="custom-td text-left" style="text-transform: uppercase">{{ "{$withdrawal?->user->name}/ Cash withdraw /{$withdrawal?->transactionAccount?->name}" }}</td>
-                        <td class="custom-td text-right">0.00</td>
-                        <td class="custom-td text-right">{{ $withdrawal?->amount }}</td>
-                        <td class="custom-td text-right">0.00 </td>
-                    </tr>
-                @endif
                 @foreach ($loanDetails as $detail)
                     <tr key="{{ $key++ }}">
                         <td class="custom-td text-left">{{ $detail['date'] }}</td>

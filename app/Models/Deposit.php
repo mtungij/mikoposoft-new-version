@@ -14,15 +14,22 @@ class Deposit extends Model
         'loan_id',
         'customer_id',
         'user_id',
+        'desc',
+        'status',
         'transaction_account_id',
         'amount',
         'withdraw',
         'balance',
         'checked_by',
+        'checked',
         'loan_amount',
         'collection',
+        'payer_name',
         'receipt_date',
-        'payer_name'
+        'end_date',
+        'next_return_date',
+        'duration',
+        'repayments',
     ];
 
     public function loan(): BelongsTo
