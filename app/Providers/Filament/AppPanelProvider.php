@@ -35,7 +35,7 @@ class AppPanelProvider extends PanelProvider
             ->registration()
             ->font('Poppins')
             ->passwordReset()
-            ->sidebarWidth('280px')
+            ->sidebarWidth('260px')
             ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Cyan,

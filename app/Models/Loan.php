@@ -21,6 +21,7 @@ class Loan extends Model
         "approved_by",
         "loan_type",
         "status",
+        "health",
     ];
 
     public function isWithdrown(): bool

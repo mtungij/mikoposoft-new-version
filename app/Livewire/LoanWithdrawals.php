@@ -241,6 +241,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                     ->options(
                         fn () => Customer::whereRelation('branch', 'company_id', auth()->user()->company_id)
                                     ->whereRelation('loans', 'status', '=', 'approved')
+                                    ->orWhereRelation('loans', 'status', '=', 'closed')
                                     ->pluck('full_name', 'id')
                         )
                     ->searchable()
@@ -281,7 +282,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                 $data['loan_id'] = $this->loan?->id;
                 $data['desc'] = auth()->user()->name . "/ loan return/ {$this?->loan?->loanDetails()->first()->duration} ({$this?->loan?->loanDetails()->first()->repayments})";
                 $data['end_date'] = $this->loan_end_date;
-                // $data['next_return_date'] = $loan->getNextLoanreturnDate($this?->loan?->id);
+                $data['next_return_date'] = $loan->getNextLoanreturnDate($this?->loan?->id);
                 $data['duration'] = $this?->loan?->loanDetails()?->first()->duration;
                 $data['repayments'] = $this?->loan?->loanDetails()?->first()->repayments;
                 $data['balance'] = $data['amount'];
@@ -311,6 +312,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                         ['receipt_date', '=', $data['receipt_date']],
                         ['checked_by','=', 'customer'],
                         ['loan_id','=', $this?->loan?->id],
+                        ['status', '!=', 'withdrawal'],
                     ])->first();
                     
 
@@ -423,6 +425,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
                 $data['withdraw'] = $data['amount'];
                 $data['loan_amount'] = $this?->loanAmount;
                 $data['amount'] = 0;
+                $data['collection'] = $this->collection;
 
 
                 $float = Flot::where([

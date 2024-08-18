@@ -17,7 +17,9 @@ Artisan::command('inspire', function () {
 Schedule::call(function () {
     $loan = new Loan();
     $customers = Customer::with(['deposits' => function (Builder $query) {
-                            return $query->where('checked', 'no')->whereDate('end_date', '<=', today());
+                            return $query->where('checked', 'no');
+                        }, 'loans' => function (Builder $query) {
+                            return $query->where('health', 'active');
                         }])->where('status', 'withdrawal')->get();                        
                             
     if($customers) {
@@ -25,6 +27,13 @@ Schedule::call(function () {
             $lastDeposit = $customer?->deposits()?->latest()->first();
 
             if($lastDeposit && $lastDeposit->next_return_date == date('Y-m-d')) {
+                // when 
+                if($lastDeposit->end_date == date('Y-m-d')) {
+                    $individualLoan = Loan::where([['loan_id', $lastDeposit->loan_id], ['status', 'withdrawal']])->first();
+                    $individualLoan->status = 'closed';
+                    $individualLoan->save();
+                }
+
                 $today_deposit_data = [
                     'loan_id' => $lastDeposit->loan_id,
                     'customer_id' => $lastDeposit->customer_id,
@@ -57,10 +66,27 @@ Schedule::call(function () {
                     }
                     LoanRecovery::create(['loan_id' => $lastDeposit->loan_id, 'amount' => $amount]);
                 }
-                $lastDeposit->update(['checked' => 'yes']);
-    
+
+                
                 $systemDeposit = Deposit::create($today_deposit_data);
-    
+                
+                $lastDeposit->update(['checked' => 'yes']);
+                
+                // refetch the loan recovery 
+                $loanRecovery = LoanRecovery::where('loan_id', $lastDeposit->loan_id)->first();
+
+                $individualLoan1 = Loan::where([['loan_id', $lastDeposit->loan_id], ['status', 'withdrawal']])->first();
+                
+                if($loanRecovery && $loanRecovery->amount > 0 && $lastDeposit->end_date == date('Y-m-d')) {
+                    $individualLoan1->status = 'closed';
+                    $individualLoan1->health = 'penalt';
+                    $individualLoan1->save();
+                } elseif((!$loanRecovery || ($loanRecovery && $loanRecovery->amount > 0)) 
+                && $lastDeposit->end_date == date('Y-m-d')) {
+                    $individualLoan1->status = 'closed';
+                    $individualLoan1->health = 'paid';
+                    $individualLoan1->save();
+                }
                 // sub the balance of todays deposit
                 // $lastDeposit->decrement('balance', $lastDeposit->balance);
             }
