@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserResource extends Resource
 {
@@ -120,6 +121,15 @@ class UserResource extends Resource
                     ->same('password')
                     ->required()
                     ->visible(fn (?string $operation) => $operation !== 'edit'),
+                Select::make('roles')
+                    ->hiddenLabel()
+                    ->relationship('roles', 'name')
+                    ->getOptionLabelFromRecordUsing(fn(Model $record) => Str::headline($record->name))
+                    ->multiple()
+                    ->preload()
+                    ->searchable()
+                    ->optionsLimit(5)
+                    ->columnSpanFull(),
             ]);
     }
 
