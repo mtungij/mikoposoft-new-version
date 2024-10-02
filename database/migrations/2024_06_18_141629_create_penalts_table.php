@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('penalts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
             $table->string('type');
             $table->integer('amount');
             $table->timestamps();

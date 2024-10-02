@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('loan_fees', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
             $table->string('category');
             $table->string('fee_type')->nullable();
             $table->string('desc');

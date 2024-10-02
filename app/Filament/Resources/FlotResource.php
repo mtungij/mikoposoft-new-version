@@ -47,7 +47,7 @@ class FlotResource extends Resource
                     ->live(),
                 Select::make('to_branch_id')
                     ->options(function () {
-                        return Branch::where('company_id', auth()->user()->branch_id)->get()->pluck('name', 'id');
+                        return Branch::where('company_id', auth()->user()->company_id)->get()->pluck('name', 'id');
                     })
                     ->label(__('To Branch Name'))
                     ->required()

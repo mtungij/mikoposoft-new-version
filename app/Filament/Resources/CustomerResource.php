@@ -54,7 +54,7 @@ class CustomerResource extends Resource
                         ->required(),
                     Forms\Components\Select::make('user_id')
                         ->relationship('user', 'name', function (Builder $query, Get $get) {
-                            return $query->where('branch_id', $get('branch_id'))->where('position', '!=', 'admin');
+                            return $query->where('branch_id', $get('branch_id'));
                         })
                         ->label('Branch Employee')
                         ->searchable()

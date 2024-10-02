@@ -38,7 +38,6 @@ class ManageTransactionAccounts extends ManageRecords
                 })
                 ->using(function (array $data, string $model): Model {
                     $data['company_id'] = auth()->user()->company_id;
-                    $data['branch_id'] = Filament::getTenant()->id;
                     
                     $account = $model::create($data);
                     return $account;
