@@ -66,6 +66,8 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
 
     public ?int $debt = 0;
 
+    public ?int $paid = 0;
+
     public ?int $recovery_amount = 0;
 
     public function mount() 
@@ -81,6 +83,7 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
             $this->getLastPayment();
             $this->getDebt();
             $this->getRecoveryAmount();
+            $this->getPaid();
     }
 
     #[On('customer-changed')]
@@ -94,6 +97,12 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
     {
         $totalDeposits = Deposit::where('loan_id', $this?->loan?->id)->sum('amount');
         $this->debt = $this->loanAmount - $totalDeposits;
+    }
+
+    #[On('customer-changed')]
+    public function getPaid()
+    {
+        $this->paid = Deposit::where('loan_id', $this?->loan?->id)->sum('amount');
     }
 
     public function getRecoveryAmount()
@@ -158,9 +167,9 @@ class LoanWithdrawals extends Component implements HasForms, HasTable, HasAction
        if($this->customer_id) {
            if($this->loan->loanDetails()->first()->formula->name == 'straight'){
                $this->collection = match ($this->loan->loanDetails()->first()->duration) {
-                   "daily" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) ,
-                   "weekly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount) ,
-                   "monthly" => ($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest / 100 + $this->loan->loanDetails()->first()->amount),
+                   "daily" => ((($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest) / 100 + $this->loan->loanDetails()->first()->amount)/$this->loan->loanDetails()->first()->repayments),
+                   "weekly" => ((($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest) / 100 + $this->loan->loanDetails()->first()->amount)/$this->loan->loanDetails()->first()->repayments),
+                   "monthly" => ((($this->loan->loanDetails()->first()->amount * $this->loan->loanDetails()->first()->loanCategory->interest) / 100 + $this->loan->loanDetails()->first()->amount)/$this->loan->loanDetails()->first()->repayments),
                };
            } elseif($this->loan->loanDetails()->first()->formula->name == 'fraterate' || $this->loan->loanDetails()->first()->formula->name == 'reducing'){
                if ($this->loan->loanDetails()->first()->duration == "daily") {

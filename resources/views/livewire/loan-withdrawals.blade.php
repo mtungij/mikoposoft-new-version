@@ -74,8 +74,8 @@
                         <td class="custom-td text-left">{{ $loan_end_date ?? 'YYY-MM-DD' }}</td>
                         <td class="custom-td text-right">{{ number_format($loan?->loanDetails()->first()->amount ?? 0) }}</td>
                         <td class="custom-td text-right">{{ number_format($collection ?? 0) }}</td>
-                        <td class="custom-td text-right">{{ 0 }}</td>
-                        <td class="custom-td text-right">{{ 0 }}</td>
+                        <td class="custom-td text-right">{{ number_format($paid, 2) }}</td>
+                        <td class="custom-td text-right">{{ number_format($debt, 2) }}</td>
                     </tr>
                 </tbody>
             </table>
